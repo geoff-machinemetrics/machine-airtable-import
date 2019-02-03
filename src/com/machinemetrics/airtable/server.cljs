@@ -1,5 +1,6 @@
 (ns com.machinemetrics.airtable.server
   (:require
+    [mount.core :as mount :refer [defstate]]
     ["http" :as http]
     ["url" :as url]))
 
@@ -28,7 +29,10 @@
                      (rand-int 300))
       (doto res (.writeHead 404) (.end)))))
 
-(defn main [& cli-args]
-  (doto
-    (.createServer http handler)
-    (.listen 8888)))
+(defstate server
+          :start (doto
+                   (.createServer http handler)
+                   (.listen 8888))
+          :stop (some-> @server .close))
+
+(defn main [& cli-args] (mount/start))
