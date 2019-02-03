@@ -15,7 +15,7 @@
         (comp
           (filter #(> (:temp %) 110))
           (map #((juxt :record-id :timestamp :machine-id :temp) %))
-          (map #(string/join "," %)))))
+          (map #(string/join "," (conj % "\n"))))))
 
 (defn retrieve-machines [domain access-token offset limit ch]
   (go-loop [offset offset]
@@ -29,15 +29,17 @@
                  (onto-chan ch machines false)
                  (recur (+ offset limit)))))))
 
-(defn process-machines [ch]
-  (let [])
-  (go-loop []
-           (when-let [machine (<! ch)]
-             (println machine)
-             (recur))))
+(defn process-machines [file ch]
+  (let [header "record-id,timestamp,machine-id,temp\n"]
+    (.writeFileSync fs file header "utf-8")
+    (go-loop []
+             (when-let [line (<! ch)]
+               (.appendFileSync fs file line "utf-8")
+               (recur)))))
 
 (defn main [& cli-args]
-  (let [process-ch (process-channel)]
+  (let [file "import-results.csv"
+        process-ch (process-channel)]
     (retrieve-machines "http://localhost:8888" "token" 0 100 process-ch)
-    (process-machines process-ch)))
+    (process-machines file process-ch)))
 

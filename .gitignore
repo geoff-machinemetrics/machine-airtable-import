@@ -1,3 +1,7 @@
-node_modules
+node_modules/
 import-results.json
+import-results.csv
 .shadow-cljs
+.nrepl-port
+out/
+.idea/
