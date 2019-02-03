@@ -3,6 +3,7 @@
     [cljs.core.async :refer [<! >! chan onto-chan timeout close!]]
     [cljs-http.client :as http]
     [clojure.string :as string]
+    [clojure.tools.cli :refer [parse-opts]]
     ["xhr2" :as xhr2]
     ["fs" :as fs])
   (:require-macros
@@ -17,29 +18,35 @@
           (map #((juxt :record-id :timestamp :machine-id :temp) %))
           (map #(string/join "," (conj % "\n"))))))
 
-(defn retrieve-machines [domain access-token offset limit ch]
+(defn retrieve-machines [{:keys [url-base offset limit access-token]} ch]
   (go-loop [offset offset]
            (println (str "FETCHING records between " offset " and " (+ offset limit)))
            (let [response (<! (http/request {:method  :get
-                                             :url     (str domain "/dmz/airtable/import-machines?offset=" offset "&limit=" limit)
-                                             :headers {"DMZ-Access-Token" access-token}
-                                             :body    nil}))]
+                                             :url     (str url-base "/dmz/airtable/import-machines?offset=" offset "&limit=" limit)
+                                             :headers {"DMZ-Access-Token" access-token}}))]
              (when (= (:status response) 200)
                (let [machines (:body response)]
                  (onto-chan ch machines false)
                  (recur (+ offset limit)))))))
 
-(defn process-machines [file ch]
+(defn process-machines [{:keys [result-file]} ch]
   (let [header "record-id,timestamp,machine-id,temp\n"]
-    (.writeFileSync fs file header "utf-8")
+    (.writeFileSync fs result-file header "utf-8")
     (go-loop []
              (when-let [line (<! ch)]
-               (.appendFileSync fs file line "utf-8")
+               (.appendFileSync fs result-file line "utf-8")
                (recur)))))
 
+(def cli-options
+  [["-u" "--url-base <urlBase>" "Url base" :default "http://localhost:8888"]
+   ["-a" "--access-token <accessToken>" "Access Token" :default ""]
+   ["-o" "--offset [offset]" "Offset" :default 0 :parse-fn #(js/parseInt %)]
+   ["-l" "--limit [limit]" "Limit" :default 100 :parse-fn #(js/parseInt %)]
+   ["-f" "--result-file [file]" "File to write result to" :default "./import-results.csv"]])
+
 (defn main [& cli-args]
-  (let [file "import-results.csv"
+  (let [opts       (:options (parse-opts cli-args cli-options))
         process-ch (process-channel)]
-    (retrieve-machines "http://localhost:8888" "token" 0 100 process-ch)
-    (process-machines file process-ch)))
+    (retrieve-machines opts process-ch)
+    (process-machines opts process-ch)))
 
