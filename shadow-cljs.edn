@@ -1,13 +1,13 @@
 {:lein   true
  :nrepl  {:port 9000}
- :builds {:importer {:output-to "out/importer.js"
+ :builds {:importer {:output-to "target/js/importer.js"
                      :target    :node-script
                      :main      com.machinemetrics.airtable.import/main
                      :release   {:output-to        "dist/importer.min.js"
                                  :compiler-options {:optimizations :advanced
                                                     :infer-externs :auto
                                                     :externs       ["externs/fs.js"]}}}
-          :server   {:output-to "out/server.js"
+          :server   {:output-to "target/js/server.js"
                      :target    :node-script
                      :main      com.machinemetrics.airtable.server/main
                      :release   {:output-to        "dist/server.min.js"
