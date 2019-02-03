@@ -5,4 +5,11 @@
                      :main             com.machinemetrics.airtable.import/main
                      :compiler-options {:optimizations :advanced
                                         :infer-externs :auto
-                                        :externs ["externs/fs.js"]}}}}
+                                        :externs ["externs/fs.js"]}}
+          :server   {:output-to        "out/server.js"
+                     :target           :node-script
+                     :main             com.machinemetrics.airtable.server/main
+                     :compiler-options {:optimizations :advanced
+                                        :infer-externs :auto
+                                        :externs ["externs/http.js"
+                                                  "externs/url.js"]}}}}
